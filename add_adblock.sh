@@ -1,4 +1,68 @@
-package com.simple.browser;
+#!/data/data/com.termux/files/usr/bin/bash
+# =============================================================
+#  اضافه کردن ادبلاکر سبک (لیست دامنه) به مرورگر ساده
+#  توکن رو موقع اجرا میپرسه، توی فایل ذخیره نمیشه
+# =============================================================
+set -e
+
+GITHUB_USERNAME="mmadmehdi"
+REPO_NAME="simple-browser"
+
+read -s -p "GitHub Token رو وارد کن (نمایش داده نمیشه): " GITHUB_TOKEN
+echo ""
+
+if [ -z "$GITHUB_TOKEN" ]; then
+  echo "!! توکن خالیه، دوباره اجرا کن."
+  exit 1
+fi
+
+PKG="com.simple.browser"
+PKG_PATH=$(echo "$PKG" | tr '.' '/')
+PROJECT_DIR="$HOME/$REPO_NAME"
+
+if [ ! -d "$PROJECT_DIR" ]; then
+  echo "!! پوشه پروژه پیدا نشد ($PROJECT_DIR). اول باید پروژه اصلی رو ساخته باشی."
+  exit 1
+fi
+
+cd "$PROJECT_DIR"
+
+# ------------------------- لیست دامنه‌های تبلیغاتی --------------------------
+mkdir -p app/src/main/assets
+cat > app/src/main/assets/adblock_list.txt << 'EOF'
+doubleclick.net
+googlesyndication.com
+googleadservices.com
+adservice.google.com
+googletagservices.com
+googletagmanager.com
+adnxs.com
+taboola.com
+outbrain.com
+criteo.com
+scorecardresearch.com
+moatads.com
+adsafeprotected.com
+pubmatic.com
+rubiconproject.com
+openx.net
+casalemedia.com
+adform.net
+media.net
+mopub.com
+applovin.com
+ads.yahoo.com
+amazon-adsystem.com
+bidswitch.net
+smartadserver.com
+yieldmo.com
+zedo.com
+adroll.com
+EOF
+
+# ------------------------------ MainActivity.java (به‌روزرسانی) ---------------
+cat > "app/src/main/java/$PKG_PATH/MainActivity.java" << EOF
+package $PKG;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -177,3 +241,23 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 }
+EOF
+
+# =================================================================
+#  گیت: کامیت و پوش
+# =================================================================
+git add -A
+git commit -q -m "Add lightweight domain-based ad blocking (no Rust/NDK needed)"
+
+REMOTE_URL="https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git"
+git remote remove origin 2>/dev/null || true
+git remote add origin "$REMOTE_URL"
+git push -u origin main
+
+unset GITHUB_TOKEN
+
+echo ""
+echo "=================================================================="
+echo "✅ پوش شد. برو به تب Actions تا بیلد جدید با ادبلاکر انجام بشه:"
+echo "   https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/actions"
+echo "=================================================================="
