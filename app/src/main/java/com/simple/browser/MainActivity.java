@@ -17,13 +17,9 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class MainActivity extends Activity {
 
@@ -33,14 +29,14 @@ public class MainActivity extends Activity {
 
     private final List<WebView> tabs = new ArrayList<>();
     private int currentTab = -1;
-    private final Set<String> adDomains = new HashSet<>();
+    private AdBlockEngine adBlockEngine;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        loadAdBlockList();
+        adBlockEngine = new AdBlockEngine(this);
 
         webContainer = findViewById(R.id.webContainer);
         tabBar = findViewById(R.id.tabBar);
@@ -55,29 +51,6 @@ public class MainActivity extends Activity {
 
         addNewTab("https://www.google.com");
         addPlusButton();
-    }
-
-    private void loadAdBlockList() {
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(getAssets().open("adblock_list.txt")))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty() && !line.startsWith("#")) {
-                    adDomains.add(line);
-                }
-            }
-        } catch (Exception e) {
-            // اگه فایل نبود، سکوت میکنیم و بدون ادبلاک ادامه میدیم
-        }
-    }
-
-    private boolean isAdRequest(String url) {
-        if (url == null) return false;
-        for (String domain : adDomains) {
-            if (url.contains(domain)) return true;
-        }
-        return false;
     }
 
     private void loadInput() {
@@ -115,8 +88,10 @@ public class MainActivity extends Activity {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (isAdRequest(url)) {
-                    // جواب خالی برمیگردونیم تا درخواست تبلیغ بارگذاری نشه
+                String pageUrl = view.getUrl();
+                String rtype = request.isForMainFrame() ? "document" : "other";
+
+                if (adBlockEngine.shouldBlock(url, pageUrl, rtype)) {
                     return new WebResourceResponse("text/plain", "utf-8",
                             new ByteArrayInputStream(new byte[0]));
                 }
@@ -173,6 +148,7 @@ public class MainActivity extends Activity {
             wv.clearCache(true);
             wv.destroy();
         }
+        if (adBlockEngine != null) adBlockEngine.destroy();
         deleteDatabase("webview.db");
         super.onDestroy();
     }

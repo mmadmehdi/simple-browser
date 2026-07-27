@@ -3,3 +3,6 @@ build/
 *.iml
 .idea/
 local.properties
+rust/**/target/
+app/src/main/jniLibs/
+app/src/main/assets/easylist.txt
