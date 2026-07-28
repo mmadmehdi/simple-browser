@@ -1,4 +1,4 @@
-use adblock::engine::Engine;
+use adblock::Engine;
 use adblock::lists::{FilterSet, ParseOptions};
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jlong, JNI_FALSE, JNI_TRUE};
