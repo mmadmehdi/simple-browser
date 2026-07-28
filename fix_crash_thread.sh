@@ -1,4 +1,27 @@
-package com.simple.browser;
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+GITHUB_USERNAME="mmadmehdi"
+REPO_NAME="simple-browser"
+PKG="com.simple.browser"
+PKG_PATH=$(echo "$PKG" | tr '.' '/')
+
+read -s -p "GitHub Token رو وارد کن (نمایش داده نمیشه): " GITHUB_TOKEN
+echo ""
+if [ -z "$GITHUB_TOKEN" ]; then
+  echo "!! توکن خالیه، دوباره اجرا کن."
+  exit 1
+fi
+
+PROJECT_DIR="$HOME/$REPO_NAME"
+if [ ! -d "$PROJECT_DIR" ]; then
+  echo "!! پوشه پروژه پیدا نشد ($PROJECT_DIR)."
+  exit 1
+fi
+cd "$PROJECT_DIR"
+
+cat > "app/src/main/java/$PKG_PATH/MainActivity.java" << EOF
+package $PKG;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -169,3 +192,20 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 }
+EOF
+
+git add -A
+git commit -q -m "Fix crash: avoid WebView.getUrl() on background thread inside shouldInterceptRequest"
+
+REMOTE_URL="https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git"
+git remote remove origin 2>/dev/null || true
+git remote add origin "$REMOTE_URL"
+git push -u origin main
+
+unset GITHUB_TOKEN
+
+echo ""
+echo "=================================================================="
+echo "✅ پوش شد. تب Actions رو چک کن:"
+echo "   https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/actions"
+echo "=================================================================="
